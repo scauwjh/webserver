@@ -1,0 +1,11 @@
+{
+	[
+		'src/*',
+		'src/interface/*'
+	],
+
+	[
+		debug_info,
+		{outdir, "ebin"}
+	]
+}.
