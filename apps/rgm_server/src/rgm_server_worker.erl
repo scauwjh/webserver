@@ -18,9 +18,18 @@
 	code_change/3
 ]).
 
--record(state, {lsock, socket, request_line, headers = [],
-	body = <<>>, content_remaining = 0,
-	callback, user_data, parent}).
+-record(state, {
+	lsock,
+	socket,
+	request_line,
+	headers = [],
+	body = <<>>,
+	content_remaining = 0,
+	callback,
+	user_data,
+	parent,
+	keep_alive
+}).
 
 %%%========================================================================
 %%% External functions
@@ -44,18 +53,32 @@ handle_call(_Request, _From, State) ->
 handle_cast(_Request, State) ->
 	{noreply, State}.
 
+%% 解析请求行
 handle_info({http, _Sock, {http_request, _, _, _} = Request}, State) ->
+	io:format("Request=~p~n", [Request]),
 	inet:setopts(State#state.socket, [{active, once}]),
 	{noreply, State#state{request_line = Request}};
+%% 接收解析头部
 handle_info({http, _Sock, {http_header, _, Name, _, Value}}, State) ->
 	inet:setopts(State#state.socket, [{active, once}]),
 	{noreply, header(Name, Value, State)};
+%% remaining为0，数据接收完毕
 handle_info({http, _Sock, http_eoh}, #state{content_remaining = 0} = State) ->
-	{stop, normal, handle_http_request(State)};
+	case State#state.keep_alive of
+	true ->
+		%% 持久连接，不断开连接
+		io:format("is keep_alive!~n"),
+		inet:setopts(State#state.socket, [{active, once}]),
+		{noreply, handle_http_request(State)};
+	_Other ->
+		%% 非持久连接，直接断开连接，销毁进程
+		{stop, normal, handle_http_request(State)}
+	end;
+%% 数据接收
 handle_info({http, _Sock, http_eoh}, State) ->
 	inet:setopts(State#state.socket, [{active, once}, {packet, raw}]),
 	{noreply, State};
-
+%% tcp 数据接收处理
 handle_info({tcp, _Sock, Data}, State) when is_binary(Data) ->
 	ContentRem = State#state.content_remaining - byte_size(Data),
 	Body = list_to_binary([State#state.body, Data]),
@@ -64,14 +87,17 @@ handle_info({tcp, _Sock, Data}, State) when is_binary(Data) ->
 	true ->
 		inet:setopts(State#state.socket, [{active, once}]),
 		{noreply, NewState};
-	_ ->
+	_Other ->
 		{stop, normal, handle_http_request(NewState)}
 	end;
+%% tcp连接关闭
 handle_info({tcp_closed, _Sock}, State) ->
 	{stop, normal, State};
 %% 延迟初始化
+%% gen_tcp:accept阻塞等待，收到信息向父进程(当前gen_server进程)发异步消息
+%% 并将当前进程挂接到rgm_connection_sup监督者下
 handle_info(timeout, #state{lsock = LSock, parent = Parent} = State) ->
-	{ok, Socket} = gen_tcp:accept(LSock), %% 阻塞等待
+	{ok, Socket} = gen_tcp:accept(LSock),
 	rgm_connection_sup:start_child(Parent),
 	inet:setopts(Socket, [{active, once}]),
 	{noreply, State#state{socket = Socket}}.
@@ -85,16 +111,24 @@ code_change(_OldVsn, State, _Extra) ->
 %%%========================================================================
 %%% Internal functions
 %%%========================================================================
+%% Content-Length
 header('Content-Length' = Name, Value, State) ->
 	ContentLength = list_to_integer(binary_to_list(Value)),
 	State#state{content_remaining = ContentLength,
 				headers = [{Name, Value} | State#state.headers]};
+%% if keep-alive or not
+header('Connection' = Name, <<"keep-alive">> = Value, State) ->
+	State#state{keep_alive = true,
+				headers = [{Name, Value} | State#state.headers]};
+%% Expect, reply code
 header(<<"Expect">> = Name, <<"100-continue">> = Value, State) ->
-	gen_tcp:send(State#state.socket, rgm_server_behaviour:http_reply(100)),
+	gen_tcp:send(State#state.socket, rgm_server_lib:http_reply(100)),
 	State#state{headers = [{Name, Value} | State#state.headers]};
+%% Other header
 header(Name, Value, State) ->
 	State#state{headers = [{Name, Value} | State#state.headers]}.
 
+%% handle the request
 handle_http_request(#state{callback = Callback,
 						request_line = Request,
 						headers = Headers,
@@ -105,6 +139,7 @@ handle_http_request(#state{callback = Callback,
 	gen_tcp:send(State#state.socket, Reply),
 	State.
 
+%% dispatchs
 dispatch('GET', Request, Headers, _Body, Callback, UserData) ->
 	Callback:get(Request, Headers, UserData);
 dispatch('POST', Request, Headers, Body, Callback, UserData) ->

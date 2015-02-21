@@ -2,6 +2,8 @@
 -author("kei 2015-02-15").
 -description("util functions").
 
+-include("common.hrl").
+
 -export([
 	random/1
 ]).

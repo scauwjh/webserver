@@ -38,9 +38,9 @@ init([]) ->
     {ok, []}.
 
 get({http_request, 'GET', {abs_path, <<"/",Key/bytes>>}, _},
-    _Head, _UserData) ->
+    Headers, _UserData) ->
     Value = Key,
-    rgm_server_lib:http_reply(200, [], Value).
+    rgm_server_lib:http_reply(200, Headers, Value).
 
 delete({http_request, 'DELETE', {abs_path, <<"/",Key/bytes>>}, _},
        _Head, _UserData) ->
