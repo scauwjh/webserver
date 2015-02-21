@@ -42,13 +42,13 @@ get({http_request, 'GET', {abs_path, <<"/",Key/bytes>>}, _},
     Value = Key,
     rgm_server_lib:http_reply(200, Headers, Value).
 
-delete({http_request, 'DELETE', {abs_path, <<"/",Key/bytes>>}, _},
+delete({http_request, 'DELETE', {abs_path, <<"/",_Key/bytes>>}, _},
        _Head, _UserData) ->
     % simple_cache:delete(Key),
     rgm_server_lib:http_reply(200).
 
-put({http_request, 'PUT', {abs_path, <<"/",Key/bytes>>}, _},
-    _Head, Body, _UserData) ->
+put({http_request, 'PUT', {abs_path, <<"/",_Key/bytes>>}, _},
+    _Head, _Body, _UserData) ->
     % simple_cache:insert(Key, Body),
     rgm_server_lib:http_reply(200).
 

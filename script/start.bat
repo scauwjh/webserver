@@ -1,4 +1,5 @@
 @echo off
 
-erl +e 1000 +fnu +K true -pa ../ebin ../apps/rgm_server/ebin -sname webserver@localhost -s main
-
+erl +e 1000 +fnu +K true -pa ../ebin -sname webserver@localhost -s main -s reloader
+
+

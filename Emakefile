@@ -1,7 +1,11 @@
 {
 	[
 		'src/*',
-		'src/utils/*'
+		'src/utils/*',
+		% rgm_server
+		'src/rgm_server/src/*',
+		'src/rgm_server/src/interface/*',
+		'src/rgm_server/src/lib/*'
 	],
 
 	[

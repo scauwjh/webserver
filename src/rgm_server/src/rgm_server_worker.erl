@@ -35,6 +35,7 @@
 %%% External functions
 %%%========================================================================
 start_link(Callback, LSock, UserArgs) ->
+	io:format("start_link~n"),
 	gen_server:start_link(?MODULE, [Callback, LSock, UserArgs, self()], []).
 
 init([Callback, LSock, UserArgs, Parent]) ->
@@ -55,7 +56,6 @@ handle_cast(_Request, State) ->
 
 %% 解析请求行
 handle_info({http, _Sock, {http_request, _, _, _} = Request}, State) ->
-	io:format("Request=~p~n", [Request]),
 	inet:setopts(State#state.socket, [{active, once}]),
 	{noreply, State#state{request_line = Request}};
 %% 接收解析头部
@@ -67,7 +67,6 @@ handle_info({http, _Sock, http_eoh}, #state{content_remaining = 0} = State) ->
 	case State#state.keep_alive of
 	true ->
 		%% 持久连接，不断开连接
-		io:format("is keep_alive!~n"),
 		inet:setopts(State#state.socket, [{active, once}]),
 		{noreply, handle_http_request(State)};
 	_Other ->
@@ -94,7 +93,7 @@ handle_info({tcp, _Sock, Data}, State) when is_binary(Data) ->
 handle_info({tcp_closed, _Sock}, State) ->
 	{stop, normal, State};
 %% 延迟初始化
-%% gen_tcp:accept阻塞等待，收到信息向父进程(当前gen_server进程)发异步消息
+%% gen_tcp:accept阻塞等待，收到信息向父进程(即当前gen_server进程)发异步消息
 %% 并将当前进程挂接到rgm_connection_sup监督者下
 handle_info(timeout, #state{lsock = LSock, parent = Parent} = State) ->
 	{ok, Socket} = gen_tcp:accept(LSock),

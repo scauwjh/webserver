@@ -1,9 +1,9 @@
 @echo off
 
-rem build
+mkdir ebin
+
 erl -pa ebin -make
 
-rem app files
 cp src/interface/*.app ebin
 
 pause
