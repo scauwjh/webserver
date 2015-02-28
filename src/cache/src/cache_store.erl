@@ -1,6 +1,6 @@
 -module(cache_store).
 -author("kei 2015-02-27").
--description("Use mnesia to store the cache").
+-description("Use mnesia to store the pid").
 
 -include("cache.hrl").
 
@@ -54,6 +54,8 @@ delete(Pid) ->
 %%%========================================================================
 %%% Internal functions
 %%%========================================================================
+%% this function will call at the time of the first node init
+%% to create the table, call one times
 dynamic_db_init([]) ->
 	mnesia:create_table(key_to_pid, [
 		{index, [pid]},

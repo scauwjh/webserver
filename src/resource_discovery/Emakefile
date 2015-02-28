@@ -1,0 +1,12 @@
+%% just for packaging app
+{
+	[
+		'src/*'
+	],
+
+	[
+		debug_info,
+		{i, "include"},
+		{outdir, "ebin"}
+	]
+}.

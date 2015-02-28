@@ -1,0 +1,3 @@
+-module(resource_discovery).
+-author("kei 2015-02-28").
+-description("Resource discovery app, for synchronizing the datas").
