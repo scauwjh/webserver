@@ -1,4 +1,4 @@
--module(rgm_server_interface_app).
+-module(rgm_server_app).
 -author("kei 2015-02-18").
 
 -behaviour(application).
@@ -11,7 +11,8 @@
 -define(DEFAULT_PORT, 1024).
 
 start(_StartType, _StartArgs) ->
-    case application:get_env(rgm_server_interface, port) of
+    io:format("starting rgm_server...~n"),
+    case application:get_env(rgm_server, port) of
         {ok, P} ->
             Port = P;
         undefined ->

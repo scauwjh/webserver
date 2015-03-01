@@ -1,11 +1,11 @@
 {
-	application, rgm_server_interface,
+	application, rgm_server,
 	[
-		{mod, {rgm_server_interface_app, []}},
+		{mod, {rgm_server_app, []}},
 		{description, ""},
 		{vsn, "1.0.0"},
 		{modules, [
-			rgm_server_interface_app,
+			rgm_server_app,
 			rgm_server_interface_sup,
 			rgm_server_interface
 		]},

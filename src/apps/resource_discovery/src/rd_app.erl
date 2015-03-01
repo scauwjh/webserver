@@ -10,6 +10,7 @@
 
 %% to start the resource_discovery app
 start(_StartType, _StartArgs) ->
+	io:format("starting resource_discovery...~n"),
 	case rd_sup:start_link() of
 	{ok, Pid} ->
 		{ok, Pid};

@@ -35,7 +35,7 @@
 %%% External functions
 %%%========================================================================
 start_link(Callback, LSock, UserArgs) ->
-	io:format("start_link~n"),
+	io:format("#### rgm_server_worker: a new link is connected~n"),
 	gen_server:start_link(?MODULE, [Callback, LSock, UserArgs, self()], []).
 
 init([Callback, LSock, UserArgs, Parent]) ->

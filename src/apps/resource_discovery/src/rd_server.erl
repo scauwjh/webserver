@@ -19,8 +19,8 @@
 	start_link/0,
 	add_target_resource_type/1,
 	add_local_resource/2,
-	fetch_resource/1,
-	trade_resource/0
+	fetch_resources/1,
+	trade_resources/0
 ]).
 
 -record(state, {
@@ -42,11 +42,11 @@ add_target_resource_type(Type) ->
 add_local_resource(Type, Resource) ->
 	gen_server:cast(?MODULE, {add_local_resource, {Type, Resource}}).
 
-fetch_resource(Type) ->
-	gen_server:call(?MODULE, {fetch_resource, Type}).
+fetch_resources(Type) ->
+	gen_server:call(?MODULE, {fetch_resources, Type}).
 
-trade_resource() ->
-	gen_server:cast(?MODULE, trade_resource).
+trade_resources() ->
+	gen_server:cast(?MODULE, trade_resources).
 
 %% gen_server callbacks
 init([]) ->
@@ -55,8 +55,8 @@ init([]) ->
 				found_resources = dict:new()}}.
 
 %% fetch the found resources
-%% this sources would be added when trade_resource
-handle_call({fetch_resource, Type}, _From, State) ->
+%% this sources would be added when trade_resources
+handle_call({fetch_resources, Type}, _From, State) ->
 	{reply, dict:find(Type, State#state.found_resources), State}.
 
 %% add a new resource type
@@ -70,18 +70,18 @@ handle_cast({add_local_resource, {Type, Resource}}, State) ->
 	NewResourcesDict = add_resource(Type, Resource, OldResourcesDict),
 	{noreply, State#state{local_resources = NewResourcesDict}};
 %% trade resources
-handle_cast(trade_resource, State) ->
+handle_cast(trade_resources, State) ->
 	ResourcesDict = State#state.local_resources,
 	AllNodes = [node() | nodes()],
 	F = fun(Node) ->
 		gen_server:cast({?MODULE, Node},
-			{trade_resource, {node(), ResourcesDict}})
+			{trade_resources, {node(), ResourcesDict}})
 	end,
 	lists:foreach(F, AllNodes),
 	{noreply, State};
 %% trade resource with remote nodes
 %% ReplyTo is the node of the caster, reply to this node
-handle_cast({trade_resource, {ReplyTo, RemoteResourcesDict}},
+handle_cast({trade_resources, {ReplyTo, RemoteResourcesDict}},
 		#state{
 			local_resources = LocalResources,
 			target_resource_types = TargetTypes,

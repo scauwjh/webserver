@@ -21,7 +21,7 @@ init([]) ->
 	Server = {
 		rd_server,
 		{rd_server, start_link, []},
-		permanent, 2000, work, [rd_server]
+		permanent, 2000, worker, [rd_server]
 	},
 	Children = [Server],
 	RestarStrategy = {one_for_one, 0, 1},

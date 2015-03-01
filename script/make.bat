@@ -1,8 +1,11 @@
 @echo off
 
 cd ..
-erl -pa ebin -make
 
-cp src/rgm_server/src/interface/*.app ebin
+mkdir ebin
+
+cp src/apps/*/src/*.app ebin/
+
+erl -pa ebin  -make
 
 pause

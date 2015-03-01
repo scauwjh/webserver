@@ -1,7 +1,8 @@
 {
 	application, resource_discovery,
 	[
-		{description, "A simple resource discovery system"},
+		{mod, {rd_app, []}},
+		{description, ""},
 		{vsn, "1.0.0"},
 		{modules, [
 			resource_discovery,
@@ -13,7 +14,9 @@
 			rd_sup,
 			rd_server
 		]},
-		{applications, [kernel, stdlib]},
-		{mod, {rd_app, []}}
+		{applications, [
+			kernel,
+			stdlib
+		]}
 	]
 }.

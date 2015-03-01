@@ -2,8 +2,7 @@
 {
 	[
 		'src/*',
-		'src/interface/*',
-		'src/lib/*'
+		'src/interface/*'
 	],
 
 	[
