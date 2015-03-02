@@ -57,7 +57,8 @@ init([]) ->
 %% fetch the found resources
 %% this sources would be added when trade_resources
 handle_call({fetch_resources, Type}, _From, State) ->
-	{reply, dict:find(Type, State#state.found_resources), State}.
+	FoundResources = dict:find(Type, State#state.found_resources),
+	{reply, FoundResources, State}.
 
 %% add a new resource type
 handle_cast({add_target_resource_type, Type}, State) ->
@@ -120,7 +121,7 @@ reply_trade(ReplyTo, LocalResources) ->
 		ok;
 	_Other ->
 		gen_server:cast({?MODULE, ReplyTo},
-			{trade_resource, {noreply, LocalResources}})
+			{trade_resources, {noreply, LocalResources}})
 	end.
 
 %% add resources to dict

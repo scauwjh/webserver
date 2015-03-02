@@ -11,17 +11,21 @@
 
 %% API
 -export([
-	start_link/0
+	start_link/0,
+	start_child/2
 ]).
 
 start_link() ->
 	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
+start_child(Value, LeaseTime) ->
+	supervisor:start_child(?MODULE, [Value, LeaseTime]).
+
 init([]) ->
 	Element = {
 		cache_element,
 		{cache_element, start_link, []},
-		temporary, brutal_kill, work, [cache_element]
+		temporary, brutal_kill, worker, [cache_element]
 	},
 	Children = [Element],
 	RestartStrategy = {simple_one_for_one, 0, 1},

@@ -67,9 +67,9 @@ dynamic_db_init(CacheNodes) ->
 add_extra_nodes([Node | T]) ->
 	case mnesia:change_config(extra_db_nodes, [Node]) of
 	{ok, [Node]} ->
-		mnesia:add_table_copy(key_to_pid, node(), ram_copies),
-		Tables = mnesia:system_info(tables),
-		mnesia:wait_for_table(Tables, ?WAIT_FOR_TABLES);
+		mnesia:add_table_copy(key_to_pid, node(), ram_copies);
+		%% Tables = mnesia:system_info(tables),
+		%% mnesia:wait_for_table(Tables, ?WAIT_FOR_TABLES);
 	_ ->
 		add_extra_nodes(T)
 	end.

@@ -7,9 +7,9 @@
 		'src/apps/rgm_server/src/*',
 		'src/apps/rgm_server/src/interface/*',
 		%% resource_discovery
-		'src/apps/resource_discovery/src/*'
+		'src/apps/resource_discovery/src/*',
 		%% cache
-		%% 'src/apps/cache/src/*'
+		'src/apps/cache/src/*'
 	],
 
 	[
