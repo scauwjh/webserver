@@ -66,9 +66,10 @@ handle_info({http, _Sock, {http_header, _, Name, _, Value}}, State) ->
 handle_info({http, _Sock, http_eoh}, #state{content_remaining = 0} = State) ->
 	case State#state.keep_alive of
 	true ->
-		%% 持久连接，不断开连接
-		inet:setopts(State#state.socket, [{active, once}]),
-		{noreply, handle_http_request(State)};
+		%% 持久连接，不断开连接，初始化headers
+		NewState = State#state{headers = []},
+		inet:setopts(NewState#state.socket, [{active, once}]),
+		{noreply, handle_http_request(NewState)};
 	_Other ->
 		%% 非持久连接，直接断开连接，销毁进程
 		{stop, normal, handle_http_request(State)}

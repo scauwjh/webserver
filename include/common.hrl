@@ -3,11 +3,11 @@
 
 %% define debug print
 %% add/delete {d, DEBUG} in Emakefile for debug print
--ifdef(debug).
+%% -ifdef(debug).
 -define(PRINT(Module, Msg, ValueList),
 	io:format(lists:concat(["[DEBUG_MODULE: ", Module, "] ", Msg]), ValueList)).
--else.
--define(PRINT(Module, Msg, ValueList), ok).
--endif.
+%% -else.
+%% -define(PRINT(Module, Msg, ValueList), ok).
+%% -endif.
 
 -endif.

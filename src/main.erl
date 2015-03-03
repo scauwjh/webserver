@@ -18,5 +18,5 @@ start() ->
 start_apps() ->
 	application:start(resource_discovery),
 	application:start(cache),
-	application:start(rgm_server).
+	application:start(server).
 

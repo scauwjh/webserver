@@ -38,9 +38,13 @@ init([]) ->
     {ok, []}.
 
 get({http_request, 'GET', {abs_path, <<"/",Key/bytes>>}, _},
-    Headers, _UserData) ->
-    Value = Key,
-    rgm_server_lib:http_reply(200, Headers, Value).
+        Headers, _UserData) ->
+    case cache:lookup(binary_to_list(Key)) of
+    {ok, Value} ->
+        rgm_server_lib:http_reply(200, Headers, Value);
+    {error, not_found} ->
+        rgm_server_lib:http_reply(404, Headers, "404 - File Not Found")
+    end.
 
 delete({http_request, 'DELETE', {abs_path, <<"/",_Key/bytes>>}, _},
        _Head, _UserData) ->

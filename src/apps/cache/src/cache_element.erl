@@ -95,7 +95,7 @@ handle_info(timeout, State) ->
 	{stop, normal, State}.
 
 terminate(_Reason, _State) ->
-	sc_store:delete(self()),
+	cache_store:delete(self()),
 	ok.
 
 code_change(_OldVsn, State, _Extra) ->
