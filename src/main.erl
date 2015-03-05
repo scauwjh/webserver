@@ -16,6 +16,7 @@ start() ->
 	start_apps().
 
 start_apps() ->
+	application:start(logger),
 	application:start(resource_discovery),
 	application:start(cache),
 	application:start(server).

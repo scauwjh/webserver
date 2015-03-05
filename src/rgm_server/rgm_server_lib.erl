@@ -4,7 +4,9 @@
 -export([
 	http_reply/1,
 	http_reply/2,
-	http_reply/3
+	http_reply/3,
+
+	get_content_type/1
 ]).
 
 http_reply(Code, Headers, Body) ->
@@ -17,7 +19,7 @@ http_reply(Code, Headers, Body) ->
 http_reply(Code) ->
 	http_reply(Code, <<>>).
 http_reply(Code, Body) ->
-	http_reply(Code, [{"Content-Type", "text/html"}], Body).
+	http_reply(Code, [{"Content-Type", get_content_type(default)}], Body).
 
 
 %%%========================================================================
@@ -38,3 +40,19 @@ response(200) -> "200 OK";
 response(404) -> "404 Not Found";
 response(501) -> "501 Not Implemented";
 response(Code) -> integer_to_list(Code).
+
+%% content type
+get_content_type("html") -> 'text/html';
+get_content_type("htm") -> 'text/html';
+get_content_type("jpg") -> 'image/jpeg';
+get_content_type("png") -> 'image/png';
+get_content_type("gif") -> 'image/gif';
+get_content_type("ico") -> 'image/x-icon';
+get_content_type("jpe") -> 'image/jpeg';
+get_content_type("jpeg") -> 'image/jpeg';
+get_content_type("js") -> 'application/x-javascript';
+get_content_type("xml") -> 'text/xml';
+get_content_type("xls") -> 'text/xml';
+get_content_type("css") -> 'text/css';
+get_content_type("txt") -> 'text/plain';
+get_content_type(_) -> 'text/plain'.

@@ -84,8 +84,10 @@ init_resource([FileName | T]) ->
 		%% update ets
 		ets:insert(?ETS_RESOURCES, {FileName, LastModified}),
 		{ok, Bin} = file:read_file(File),
-		%% update cache
-		cache:insert(FileName, binary_to_list(Bin))
+		%% get content-type by file suffix
+		[Suffix | _Rest] = lists:reverse(re:split(FileName, "[.]", [{return,list}])),
+		ContentType = rgm_server_lib:get_content_type(Suffix),
+		cache:insert(FileName, {ContentType, binary_to_list(Bin)})
 	end,
 	init_resource(T);
 init_resource([]) ->

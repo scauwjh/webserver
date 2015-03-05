@@ -40,10 +40,12 @@ init([]) ->
 get({http_request, 'GET', {abs_path, <<"/",Key/bytes>>}, _},
         Headers, _UserData) ->
     case cache:lookup(binary_to_list(Key)) of
-    {ok, Value} ->
-        rgm_server_lib:http_reply(200, Headers, Value);
+    {ok, {ContentType, Value}} ->
+        NewHeaders = [{"Content-Type", ContentType} | Headers],
+        rgm_server_lib:http_reply(200, NewHeaders, Value);
     {error, not_found} ->
-        rgm_server_lib:http_reply(404, Headers, "404 - File Not Found")
+        NewHeaders = [{"Content-Type", rgm_server_lib:get_content_type("html")} | Headers],
+        rgm_server_lib:http_reply(404, NewHeaders, "404 - File Not Found")
     end.
 
 delete({http_request, 'DELETE', {abs_path, <<"/",_Key/bytes>>}, _},
