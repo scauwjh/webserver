@@ -33,16 +33,29 @@ delete_handler() ->
 init([]) ->
 	{ok, []}.
 
+
+handle_event({error, Msg, Value}, State) ->
+	io:format("[Error ~ts] Msg=~p. Info=~p.~n", [util:format_date(),
+		Msg, Value]),
+	{ok, State};
+handle_event({info, Msg, Value}, State) ->
+	io:format("[Info ~p] Msg=~p. Info=~p.~n", [util:format_date(),
+		Msg, Value]),
+	{ok, State};
+handle_event({debug, Msg, Value}, State) ->
+	io:format("[Debug ~w] Msg=~p. Info=~p.~n", [util:format_date(),
+		Msg, Value]),
+	{ok, State};
 handle_event(Request, State) ->
-	io:format("handle_event=~p~n", [Request]),
+	io:format("Request=~p~n", [Request]),
 	{ok, State}.
 
 handle_call(Request, State) ->
-	io:format("handle_call=~p~n", [Request]),
+	io:format("call Request=~p~n", [Request]),
 	{ok, ok, State}.
 
 handle_info(Info, State) ->
-	io:format("Info=~p~n", [Info]),
+	io:format("Info =~p~n", [Info]),
 	{ok, State}.
 
 terminate(_Reason, _State) ->

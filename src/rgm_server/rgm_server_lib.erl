@@ -9,6 +9,9 @@
 	get_content_type/1
 ]).
 
+%%%========================================================================
+%%% External functions
+%%%========================================================================
 http_reply(Code, Headers, Body) ->
 	ContentBytes = iolist_to_binary(Body),
 	Length = byte_size(ContentBytes),
@@ -21,6 +24,21 @@ http_reply(Code) ->
 http_reply(Code, Body) ->
 	http_reply(Code, [{"Content-Type", get_content_type(default)}], Body).
 
+%% content type
+get_content_type("html") -> 'text/html';
+get_content_type("htm") -> 'text/html';
+get_content_type("jpg") -> 'image/jpeg';
+get_content_type("png") -> 'image/png';
+get_content_type("gif") -> 'image/gif';
+get_content_type("ico") -> 'image/x-icon';
+get_content_type("jpe") -> 'image/jpeg';
+get_content_type("jpeg") -> 'image/jpeg';
+get_content_type("js") -> 'application/x-javascript';
+get_content_type("xml") -> 'text/xml';
+get_content_type("xls") -> 'text/xml';
+get_content_type("css") -> 'text/css';
+get_content_type("txt") -> 'text/plain';
+get_content_type(_) -> 'text/plain'.
 
 %%%========================================================================
 %%% Internal functions
@@ -40,19 +58,3 @@ response(200) -> "200 OK";
 response(404) -> "404 Not Found";
 response(501) -> "501 Not Implemented";
 response(Code) -> integer_to_list(Code).
-
-%% content type
-get_content_type("html") -> 'text/html';
-get_content_type("htm") -> 'text/html';
-get_content_type("jpg") -> 'image/jpeg';
-get_content_type("png") -> 'image/png';
-get_content_type("gif") -> 'image/gif';
-get_content_type("ico") -> 'image/x-icon';
-get_content_type("jpe") -> 'image/jpeg';
-get_content_type("jpeg") -> 'image/jpeg';
-get_content_type("js") -> 'application/x-javascript';
-get_content_type("xml") -> 'text/xml';
-get_content_type("xls") -> 'text/xml';
-get_content_type("css") -> 'text/css';
-get_content_type("txt") -> 'text/plain';
-get_content_type(_) -> 'text/plain'.
