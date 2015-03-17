@@ -5,18 +5,18 @@
 
 %% gen_event callbacks
 -export([
-	init/1,
-	handle_event/2,
-	handle_call/2,
-	handle_info/2,
-	terminate/2,
-	code_change/3
+    init/1,
+    handle_event/2,
+    handle_call/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
 ]).
 
 %% API
 -export([
-	add_handler/0,
-	delete_handler/0
+    add_handler/0,
+    delete_handler/0
 ]).
 
 %%%========================================================================
@@ -31,35 +31,34 @@ delete_handler() ->
 
 %% gen_event callbacks
 init([]) ->
-	{ok, []}.
+    {ok, []}.
 
 
 handle_event({error, Msg, Value}, State) ->
-	io:format("[Error ~ts] Msg=~p. Info=~p.~n", [util:format_date(),
-		Msg, Value]),
-	{ok, State};
+    io:format("[Error ~ts] Msg=~p. Info=~p.~n", [util:format_date(),
+        Msg, Value]),
+    {ok, State};
 handle_event({info, Msg, Value}, State) ->
-	io:format("[Info ~p] Msg=~p. Info=~p.~n", [util:format_date(),
-		Msg, Value]),
-	{ok, State};
+    io:format("[Info ~ts] Msg=~p. Info=~p.~n", [util:format_date(),
+        Msg, Value]),
+    {ok, State};
 handle_event({debug, Msg, Value}, State) ->
-	io:format("[Debug ~w] Msg=~p. Info=~p.~n", [util:format_date(),
-		Msg, Value]),
-	{ok, State};
+    io:format("[Debug ~ts] Msg=~p. Info=~p.~n", [util:format_date(),
+        Msg, Value]),
+    {ok, State};
 handle_event(Request, State) ->
-	io:format("Request=~p~n", [Request]),
-	{ok, State}.
+    io:format("[Warning ~ts] request do nothing in handle_event=~p.
+        State=~p.~n", [util:format_date(), Request, State]),
+    {ok, State}.
 
-handle_call(Request, State) ->
-	io:format("call Request=~p~n", [Request]),
-	{ok, ok, State}.
+handle_call(_Request, State) ->
+    {ok, ok, State}.
 
-handle_info(Info, State) ->
-	io:format("Info =~p~n", [Info]),
-	{ok, State}.
+handle_info(_Info, State) ->
+    {ok, State}.
 
 terminate(_Reason, _State) ->
-	ok.
+    ok.
 
 code_change(_OldVsn, State, _Extra) ->
-	{ok, State}.
+    {ok, State}.

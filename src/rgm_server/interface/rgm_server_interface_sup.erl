@@ -22,10 +22,10 @@ start_child() ->
 
 init([Port]) ->
     Server = {
-    	rgm_server_interface,
-    	{rgm_server_interface, start_link, [Port]},
-		permanent, 2000, worker, [rgm_server_interface]
-	},
+        rgm_server_interface,
+        {rgm_server_interface, start_link, [Port]},
+        permanent, 2000, worker, [rgm_server_interface]
+    },
     Children = [Server],
     RestartStrategy = {one_for_one, 0, 1},
     {ok, {RestartStrategy, Children}}.

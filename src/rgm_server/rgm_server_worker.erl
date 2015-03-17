@@ -4,156 +4,162 @@
 
 -behaviour(gen_server).
 
+-include("common.hrl").
+
 -export([
-	start_link/3
+    start_link/3
 ]).
 
 %% gen_server callbacks
 -export([
-	init/1,
-	handle_call/3,
-	handle_cast/2,
-	handle_info/2,
-	terminate/2,
-	code_change/3
+    init/1,
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
 ]).
 
 -record(state, {
-	lsock,
-	socket,
-	request_line,
-	headers = [],
-	body = <<>>,
-	content_remaining = 0,
-	callback,
-	user_data,
-	parent,
-	keep_alive
+    lsock,
+    socket,
+    request_line,
+    headers = [],
+    body = <<>>,
+    content_remaining = 0,
+    callback,
+    user_data,
+    parent,
+    keep_alive
 }).
 
 %%%========================================================================
 %%% External functions
 %%%========================================================================
 start_link(Callback, LSock, UserArgs) ->
-	io:format("#### rgm_server_worker: a new link is connected~n"),
-	gen_server:start_link(?MODULE, [Callback, LSock, UserArgs, self()], []).
+    ?PRINT(?MODULE, "a new worker is started~n", []),
+    gen_server:start_link(?MODULE, [Callback, LSock, UserArgs, self()], []).
 
 init([Callback, LSock, UserArgs, Parent]) ->
-	{ok, UserData} = Callback:init(UserArgs),
-	State = #state{
-		lsock = LSock,
-		callback = Callback,
-		user_data = UserData,
-		parent = Parent
-	},
-	{ok, State, 0}. %% 延迟初始化到 handle_info(timeout, State)
+    {ok, UserData} = Callback:init(UserArgs),
+    State = #state{
+        lsock = LSock,
+        callback = Callback,
+        user_data = UserData,
+        parent = Parent
+    },
+    {ok, State, 0}. %% 延迟初始化到 handle_info(timeout, State)
 
 handle_call(_Request, _From, State) ->
-	{reply, ok, State}.
+    {reply, ok, State}.
 
 handle_cast(_Request, State) ->
-	{noreply, State}.
+    {noreply, State}.
 
 %% 解析请求行
 handle_info({http, _Sock, {http_request, _, _, _} = Request}, State) ->
-	inet:setopts(State#state.socket, [{active, once}]),
-	{noreply, State#state{request_line = Request}};
+    inet:setopts(State#state.socket, [{active, once}]),
+    {noreply, State#state{request_line = Request}};
 %% 接收解析头部
 handle_info({http, _Sock, {http_header, _, Name, _, Value}}, State) ->
-	inet:setopts(State#state.socket, [{active, once}]),
-	{noreply, header(Name, Value, State)};
+    inet:setopts(State#state.socket, [{active, once}]),
+    {noreply, header(Name, Value, State)};
 %% remaining为0，数据接收完毕
 handle_info({http, _Sock, http_eoh}, #state{content_remaining = 0} = State) ->
-	case State#state.keep_alive of
-	true ->
-		%% 持久连接，不断开连接，初始化headers
-		inet:setopts(State#state.socket, [{active, once}]),
-		NewState = handle_http_request(State),
-		{noreply, NewState#state{headers = []}};
-	_Other ->
-		%% 非持久连接，直接断开连接，销毁进程
-		{stop, normal, handle_http_request(State)}
-	end;
+    case State#state.keep_alive of
+    true ->
+        %% 持久连接，不断开连接，初始化headers
+        inet:setopts(State#state.socket, [{active, once}]),
+        NewState = handle_http_request(State),
+        {noreply, NewState#state{headers = []}};
+    _Other ->
+        %% 非持久连接，直接断开连接，销毁进程
+        {stop, normal, handle_http_request(State)}
+    end;
 %% 数据接收
 handle_info({http, _Sock, http_eoh}, State) ->
-	inet:setopts(State#state.socket, [{active, once}, {packet, raw}]),
-	{noreply, State};
+    inet:setopts(State#state.socket, [{active, once}, {packet, raw}]),
+    {noreply, State};
 %% tcp 数据接收处理
 handle_info({tcp, _Sock, Data}, State) when is_binary(Data) ->
-	ContentRem = State#state.content_remaining - byte_size(Data),
-	Body = list_to_binary([State#state.body, Data]),
-	NewState = State#state{body = Body, content_remaining = ContentRem},
-	case ContentRem > 0 of
-	true ->
-		inet:setopts(State#state.socket, [{active, once}]),
-		{noreply, NewState};
-	_Other ->
-		{stop, normal, handle_http_request(NewState)}
-	end;
+    ContentRem = State#state.content_remaining - byte_size(Data),
+    Body = list_to_binary([State#state.body, Data]),
+    NewState = State#state{body = Body, content_remaining = ContentRem},
+    case ContentRem > 0 of
+    true ->
+        inet:setopts(State#state.socket, [{active, once}]),
+        {noreply, NewState};
+    _Other ->
+        {stop, normal, handle_http_request(NewState)}
+    end;
 %% tcp连接关闭
 handle_info({tcp_closed, _Sock}, State) ->
-	{stop, normal, State};
+    {stop, normal, State};
 %% 延迟初始化
 %% gen_tcp:accept阻塞等待，收到信息向父进程(即当前gen_server进程)发异步消息
 %% 并将当前进程挂接到rgm_connection_sup监督者下
 handle_info(timeout, #state{lsock = LSock, parent = Parent} = State) ->
-	{ok, Socket} = gen_tcp:accept(LSock),
-	rgm_connection_sup:start_child(Parent),
-	inet:setopts(Socket, [{active, once}]),
-	{noreply, State#state{socket = Socket}}.
+    {ok, Socket} = gen_tcp:accept(LSock),
+    rgm_connection_sup:start_child(Parent),
+    inet:setopts(Socket, [{active, once}]),
+    {noreply, State#state{socket = Socket}}.
 
 terminate(_Reason, _State) ->
-	ok.
+    ok.
 
 code_change(_OldVsn, State, _Extra) ->
-	{ok, State}.
+    {ok, State}.
 
 %%%========================================================================
 %%% Internal functions
 %%%========================================================================
 %% Content-Length
 header('Content-Length' = Name, Value, State) ->
-	ContentLength = list_to_integer(binary_to_list(Value)),
-	State#state{content_remaining = ContentLength,
-				headers = [{Name, Value} | State#state.headers]};
+    ContentLength = list_to_integer(binary_to_list(Value)),
+    State#state{content_remaining = ContentLength,
+                headers = [{Name, Value} | State#state.headers]};
 %% if keep-alive or not
 header('Connection' = Name, <<"keep-alive">> = Value, State) ->
-	State#state{keep_alive = true,
-				headers = [{Name, Value} | State#state.headers]};
+    State#state{keep_alive = true,
+                headers = [{Name, Value} | State#state.headers]};
+%% if keep-alive or not
+header('Keep-Alive' = _Name, Value, State) ->
+    io:format("keep-alive value=~p~n", [Value]),
+    State;
 %% Expect, reply code
 header(<<"Expect">> = Name, <<"100-continue">> = Value, State) ->
-	gen_tcp:send(State#state.socket, rgm_server_lib:http_reply(100)),
-	State#state{headers = [{Name, Value} | State#state.headers]};
+    gen_tcp:send(State#state.socket, rgm_server_lib:http_reply(100)),
+    State#state{headers = [{Name, Value} | State#state.headers]};
 %% Other header
 header(Name, Value, State) ->
-	State#state{headers = [{Name, Value} | State#state.headers]}.
+    State#state{headers = [{Name, Value} | State#state.headers]}.
 
 %% handle the request
 handle_http_request(#state{callback = Callback,
-						request_line = Request,
-						headers = Headers,
-						body = Body,
-						user_data = UserData} = State) ->
-	{http_request, Method, _, _} = Request,
+                        request_line = Request,
+                        headers = Headers,
+                        body = Body,
+                        user_data = UserData} = State) ->
+    {http_request, Method, _, _} = Request,
 
-	Reply = dispatch(Method, Request, Headers, Body, Callback, UserData),
-	gen_tcp:send(State#state.socket, Reply),
-	State.
+    Reply = dispatch(Method, Request, Headers, Body, Callback, UserData),
+    gen_tcp:send(State#state.socket, Reply),
+    State.
 
 %% dispatchs
 dispatch('GET', Request, Headers, _Body, Callback, UserData) ->
-	Callback:get(Request, Headers, UserData);
+    Callback:get(Request, Headers, UserData);
 dispatch('POST', Request, Headers, Body, Callback, UserData) ->
-	Callback:post(Request, Headers, Body, UserData);
+    Callback:post(Request, Headers, Body, UserData);
 dispatch('DELETE', Request, Headers, _Body, Callback, UserData) ->
-	Callback:delete(Request, Headers, UserData);
+    Callback:delete(Request, Headers, UserData);
 dispatch('HEAD', Request, Headers, _Body, Callback, UserData) ->
-	Callback:head(Request, Headers, UserData);
+    Callback:head(Request, Headers, UserData);
 dispatch('PUT', Request, Headers, Body, Callback, UserData) ->
-	Callback:put(Request, Headers, Body, UserData);
+    Callback:put(Request, Headers, Body, UserData);
 dispatch('TRACE', Request, Headers, Body, Callback, UserData) ->
-	Callback:trace(Request, Headers, Body, UserData);
+    Callback:trace(Request, Headers, Body, UserData);
 dispatch('OPTIONS', Request, Headers, Body, Callback, UserData) ->
-	Callback:options(Request, Headers, Body, UserData);
+    Callback:options(Request, Headers, Body, UserData);
 dispatch(_Other, Request, Headers, Body, Callback, UserData) ->
-	Callback:other_method(Request, Headers, Body, UserData).
+    Callback:other_method(Request, Headers, Body, UserData).

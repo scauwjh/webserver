@@ -5,20 +5,20 @@
 
 %% API
 -export([
-	start_link/3,
-	start_link/4
+    start_link/3,
+    start_link/4
 ]).
 
 %% Supervisor callbacks
 -export([
-	init/1
+    init/1
 ]).
 
 %%%========================================================================
 %%% External functions
 %%%========================================================================
 start_link(Callback, Port, UserArgs) ->
-	start_link(Callback, undefined, Port, UserArgs).
+    start_link(Callback, undefined, Port, UserArgs).
 
 start_link(Callback, IP, Port, UserArgs) ->
     supervisor:start_link({local, ?MODULE}, ?MODULE,
@@ -26,9 +26,9 @@ start_link(Callback, IP, Port, UserArgs) ->
 
 init([Callback, IP, Port, UserArgs]) ->
     Connection = {
-    	rgm_connection_sup,
-    	{rgm_connection_sup, start_link, [Callback, IP, Port, UserArgs]},
-    	permanent, 2000, supervisor, [rgm_connection_sup]
+        rgm_connection_sup,
+        {rgm_connection_sup, start_link, [Callback, IP, Port, UserArgs]},
+        permanent, 2000, supervisor, [rgm_connection_sup]
     },
     % Acceptor =
     Children = [Connection],

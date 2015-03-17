@@ -6,4 +6,6 @@
 
 -define(ETS_RESOURCES, ets_resources).
 
+-define(RESOURCES_DIR, '../resources/').
+
 -endif.

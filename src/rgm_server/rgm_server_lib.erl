@@ -2,27 +2,27 @@
 -author("kei 2015-02-17").
 
 -export([
-	http_reply/1,
-	http_reply/2,
-	http_reply/3,
+    http_reply/1,
+    http_reply/2,
+    http_reply/3,
 
-	get_content_type/1
+    get_content_type/1
 ]).
 
 %%%========================================================================
 %%% External functions
 %%%========================================================================
 http_reply(Code, Headers, Body) ->
-	ContentBytes = iolist_to_binary(Body),
-	Length = byte_size(ContentBytes),
-	RetHeader = io_lib:format("HTTP/1.1 ~s\r\n~sContent-Length: ~w\r\n\r\n",
-		[response(Code), header(Headers), Length]),
-	Reply = [RetHeader, ContentBytes],
-	Reply.
+    ContentBytes = iolist_to_binary(Body),
+    Length = byte_size(ContentBytes),
+    RetHeader = io_lib:format("HTTP/1.1 ~s\r\n~sContent-Length: ~w\r\n\r\n",
+        [response(Code), header(Headers), Length]),
+    Reply = [RetHeader, ContentBytes],
+    Reply.
 http_reply(Code) ->
-	http_reply(Code, <<>>).
+    http_reply(Code, <<>>).
 http_reply(Code, Body) ->
-	http_reply(Code, [{"Content-Type", get_content_type(default)}], Body).
+    http_reply(Code, [{"Content-Type", get_content_type(default)}], Body).
 
 %% content type
 get_content_type("html") -> 'text/html';
@@ -44,13 +44,13 @@ get_content_type(_) -> 'text/plain'.
 %%% Internal functions
 %%%========================================================================
 header(Headers) ->
-	header(Headers, []).
+    header(Headers, []).
 
 header([], RetHeader) ->
-	RetHeader;
+    RetHeader;
 header([{Header, Text} | Rest], RetHeader) ->
-	NewRetHeader = [io_lib:format("~s: ~s\r\n", [Header, Text]) | RetHeader],
-	header(Rest, NewRetHeader).
+    NewRetHeader = [io_lib:format("~s: ~s\r\n", [Header, Text]) | RetHeader],
+    header(Rest, NewRetHeader).
 
 %% response code mapping
 response(100) -> "100 Continue";

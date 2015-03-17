@@ -5,12 +5,12 @@
 
 %% API
 -export([
-	start_link/1
+    start_link/1
 ]).
 
 %% Supervisor callbacks
 -export([
-	init/1
+    init/1
 ]).
 
 %%%========================================================================
@@ -26,9 +26,9 @@ init([Port]) ->
         permanent, 2000, supervisor, [resource_init_sup]
     },
     Server = {
-    	rgm_server_interface_sup,
-    	{rgm_server_interface_sup, start_link, [Port]},
-    	permanent, 2000, supervisor, [rgm_server_interface_sup]
+        rgm_server_interface_sup,
+        {rgm_server_interface_sup, start_link, [Port]},
+        permanent, 2000, supervisor, [rgm_server_interface_sup]
     },
     % Acceptor =
     Children = [Resource, Server],

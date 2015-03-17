@@ -6,23 +6,23 @@
 
 %% supervisor callbacks
 -export([
-	init/1
+    init/1
 ]).
 
 %% API
 -export([
-	start_link/0
+    start_link/0
 ]).
 
 start_link() ->
-	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-	Server = {
-		rd_server,
-		{rd_server, start_link, []},
-		permanent, 2000, worker, [rd_server]
-	},
-	Children = [Server],
-	RestarStrategy = {one_for_one, 0, 1},
-	{ok, {RestarStrategy, Children}}.
+    Server = {
+        rd_server,
+        {rd_server, start_link, []},
+        permanent, 2000, worker, [rd_server]
+    },
+    Children = [Server],
+    RestarStrategy = {one_for_one, 0, 1},
+    {ok, {RestarStrategy, Children}}.

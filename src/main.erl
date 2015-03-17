@@ -12,12 +12,12 @@
 
 %% External functions
 start() ->
-	io:format("rgm_server v1.0.0~n"),
-	start_apps().
+    io:format("rgm_server v1.0.0~n"),
+    start_apps().
 
 start_apps() ->
-	application:start(logger),
-	application:start(resource_discovery),
-	application:start(cache),
-	application:start(server).
+    application:start(logger),
+    application:start(resource_discovery),
+    application:start(cache),
+    application:start(server).
 
