@@ -3,6 +3,8 @@
 
 -behaviour(rgm_server_behaviour).
 
+-include("resource_init.hrl").
+
 %% API
 -export([
     start_link/1,
@@ -39,7 +41,9 @@ init([]) ->
 
 get({http_request, 'GET', {abs_path, <<"/",Key/bytes>>}, _},
         Headers, _UserData) ->
-    case cache:lookup(binary_to_list(Key)) of
+    %% need to add resource dir
+    Resource = lists:concat([?RESOURCES_DIR, binary_to_list(Key)]),
+    case cache:lookup(Resource) of
     {ok, {ContentType, Value}} ->
         NewHeaders = [{"Content-Type", ContentType} | Headers],
         rgm_server_lib:http_reply(200, NewHeaders, Value);
@@ -50,12 +54,10 @@ get({http_request, 'GET', {abs_path, <<"/",Key/bytes>>}, _},
 
 delete({http_request, 'DELETE', {abs_path, <<"/",_Key/bytes>>}, _},
        _Head, _UserData) ->
-    % simple_cache:delete(Key),
     rgm_server_lib:http_reply(200).
 
 put({http_request, 'PUT', {abs_path, <<"/",_Key/bytes>>}, _},
     _Head, _Body, _UserData) ->
-    % simple_cache:insert(Key, Body),
     rgm_server_lib:http_reply(200).
 
 post(_Request, _Head, _Body, _UserData) ->

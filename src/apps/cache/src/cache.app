@@ -16,7 +16,7 @@
             stdlib
         ]},
         {env,[
-            % {contact_nodes, ['contact1@localhost', 'contact2@localhost']},
+            {contact_nodes, ['contact1@172.16.28.132', 'contact2@172.16.28.132']},
             {wait_time, 2000}
         ]}
     ]
