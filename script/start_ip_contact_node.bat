@@ -2,6 +2,6 @@
 
 echo enter the number:
 set /p num=
-erl -name contact%num%@172.16.28.132
+erl -name contact%num%@192.168.31.129
 
 

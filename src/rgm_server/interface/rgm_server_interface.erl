@@ -4,6 +4,7 @@
 -behaviour(rgm_server_behaviour).
 
 -include("resource_init.hrl").
+-include("server.hrl").
 
 %% API
 -export([
@@ -40,13 +41,25 @@ init([]) ->
     {ok, []}.
 
 get({http_request, 'GET', {abs_path, <<"/",Key/bytes>>}, _},
-        Headers, _UserData) ->
+        Headers, OtherData) ->
+    %% resolve the OtherData
+    ClientLastModified = OtherData#other_data.last_modified,
     %% need to add resource dir
     Resource = lists:concat([?RESOURCES_DIR, binary_to_list(Key)]),
     case cache:lookup(Resource) of
-    {ok, {ContentType, Value}} ->
-        NewHeaders = [{"Content-Type", ContentType} | Headers],
-        rgm_server_lib:http_reply(200, NewHeaders, Value);
+    {ok, {ContentType, LastModified, Value}} ->
+        %% add some new header
+        Headers1 = rgm_server_lib:add_header('LastModified', LastModified, Headers),
+        %% Headers2 = rgm_server_lib:add_header('Expires', "Sun, 22 Mar 2015 23:53:00 GMT", Headers1),
+        %% io:format("LastModified=~p~n", [{LastModified, ClientLastModified}]),
+        case LastModified =:= ClientLastModified of
+        true ->
+            NewHeaders = [{"Content-Type", ContentType} | Headers1],
+            rgm_server_lib:http_reply(304, NewHeaders);
+        false ->
+            NewHeaders = [{"Content-Type", ContentType} | Headers1],
+            rgm_server_lib:http_reply(200, NewHeaders, Value)
+        end;
     {error, not_found} ->
         NewHeaders = [{"Content-Type", rgm_server_lib:get_content_type("html")} | Headers],
         rgm_server_lib:http_reply(404, NewHeaders, "404 - File Not Found")

@@ -3,4 +3,9 @@
 
 -define(DEFAULT_PORT, 1024).
 
+-record(other_data, {
+	last_modified,
+	user_data
+}).
+
 -endif.

@@ -4,6 +4,8 @@
 
 -behaviour(gen_server).
 
+-include_lib("kernel/include/file.hrl").
+
 -include("common.hrl").
 -include("resource_init.hrl").
 
@@ -33,8 +35,7 @@ start_link() ->
 init([]) ->
     ets:new(?ETS_RESOURCES, [set, protected, named_table, {keypos, 1}]),
     init_resource(),
-    erlang:send_after(?INIT_SCAN_TIME,
-        erlang:whereis(?MODULE), init_resources),
+    erlang:send_after(?INIT_SCAN_TIME, erlang:whereis(?MODULE), init_resources),
     {ok, []}.
 
 handle_call(_Request, _From, State) ->
@@ -75,8 +76,13 @@ init_resource() ->
 init_resource(Dir, AllFileList) ->
     %% io:format("Dir is=~p~n", [Dir]),
     %% timer:sleep(2000),
-    {ok, FileNameList} = file:list_dir(Dir),
-    init_resource(FileNameList, Dir, AllFileList).
+    case file:list_dir(Dir) of
+    {ok, FileNameList} ->
+        init_resource(FileNameList, Dir, AllFileList);
+    Other ->
+        logger:error("list_dir error in init resource", Other),
+        []
+    end.
 
 init_resource([], _ParentDir, AllFileList) ->
     AllFileList;
@@ -98,21 +104,30 @@ init_resource([FileName | T], ParentDir, AllFileList) ->
 
 %% when the resource is not exist, insert to the ets
 insert_resource_ets(File) ->
-    LastModified = filelib:last_modified(File),
-    case ets:lookup(?ETS_RESOURCES, File) of
-    [{File, LastModified}] ->
-        skip;
-    _other ->
-        io:format("update resource: ~p~n", [File]),
-        %% update ets
-        ets:insert(?ETS_RESOURCES, {File, LastModified}),
-        {ok, Bin} = file:read_file(File),
-        %% get content-type by file suffix
-        [Suffix | _Rest] = lists:reverse(
-            re:split(File, "[.]", [{return,list}])
-        ),
-        ContentType = rgm_server_lib:get_content_type(Suffix),
-        cache:insert(File, {ContentType, binary_to_list(Bin)})
+    case file:read_file_info(File) of
+    {ok, FileInfo} ->
+        LastModified = httpd_util:rfc1123_date(FileInfo#file_info.mtime),
+        case ets:lookup(?ETS_RESOURCES, File) of
+        [{File, LastModified}] ->
+            skip;
+        _other ->
+            io:format("update resource: ~p~n", [File]),
+            %% update ets
+            ets:insert(?ETS_RESOURCES, {File, LastModified}),
+            case file:read_file(File) of
+            {ok, Bin} ->
+                %% get content-type by file suffix
+                [Suffix | _Rest] = lists:reverse(
+                    re:split(File, "[.]", [{return,list}])
+                ),
+                ContentType = rgm_server_lib:get_content_type(Suffix),
+                cache:insert(File, {ContentType, LastModified, binary_to_list(Bin)});
+            Other ->
+                logger:error("read file error when init resource", Other)
+            end
+        end;
+    {error, Reason} ->
+        logger:error("file not found when init resources ets", Reason)
     end.
 
 %% when one or many of the resources is deleted, update the ets

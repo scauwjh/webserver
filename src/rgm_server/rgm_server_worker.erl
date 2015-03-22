@@ -5,6 +5,7 @@
 -behaviour(gen_server).
 
 -include("common.hrl").
+-include("server.hrl").
 
 -export([
     start_link/3
@@ -30,7 +31,8 @@
     callback,
     user_data,
     parent,
-    keep_alive
+    keep_alive,
+    last_modified
 }).
 
 %%%========================================================================
@@ -122,10 +124,18 @@ header('Content-Length' = Name, Value, State) ->
 header('Connection' = Name, <<"keep-alive">> = Value, State) ->
     State#state{keep_alive = true,
                 headers = [{Name, Value} | State#state.headers]};
+%% if modified since
+header('If-Modified-Since', Value, State) ->
+    State#state{last_modified = Value};
+%% if modified since
+header('Cache-Control' = Name, _Value, State) ->
+    State#state{headers = [{Name, "public, max-age=15"} | State#state.headers]};
+
 %% if keep-alive or not
-header('Keep-Alive' = _Name, Value, State) ->
-    io:format("keep-alive value=~p~n", [Value]),
-    State;
+%% header('Keep-Alive' = _Name, Value, State) ->
+%%     io:format("keep-alive value=~p~n", [Value]),
+%%     State;
+
 %% Expect, reply code
 header(<<"Expect">> = Name, <<"100-continue">> = Value, State) ->
     gen_tcp:send(State#state.socket, rgm_server_lib:http_reply(100)),
@@ -137,29 +147,34 @@ header(Name, Value, State) ->
 %% handle the request
 handle_http_request(#state{callback = Callback,
                         request_line = Request,
-                        headers = Headers,
                         body = Body,
-                        user_data = UserData} = State) ->
+                        headers = Headers,
+                        user_data = UserData,
+                        last_modified = LastModified} = State) ->
     {http_request, Method, _, _} = Request,
-
-    Reply = dispatch(Method, Request, Headers, Body, Callback, UserData),
+    %% add other data, like lastmodifyed(If-Modified-Since)
+    OtherData = #other_data{
+        last_modified = LastModified,
+        user_data = UserData
+    },
+    Reply = dispatch(Method, Request, Headers, Body, Callback, OtherData),
     gen_tcp:send(State#state.socket, Reply),
     State.
 
 %% dispatchs
-dispatch('GET', Request, Headers, _Body, Callback, UserData) ->
-    Callback:get(Request, Headers, UserData);
-dispatch('POST', Request, Headers, Body, Callback, UserData) ->
-    Callback:post(Request, Headers, Body, UserData);
-dispatch('DELETE', Request, Headers, _Body, Callback, UserData) ->
-    Callback:delete(Request, Headers, UserData);
-dispatch('HEAD', Request, Headers, _Body, Callback, UserData) ->
-    Callback:head(Request, Headers, UserData);
-dispatch('PUT', Request, Headers, Body, Callback, UserData) ->
-    Callback:put(Request, Headers, Body, UserData);
-dispatch('TRACE', Request, Headers, Body, Callback, UserData) ->
-    Callback:trace(Request, Headers, Body, UserData);
-dispatch('OPTIONS', Request, Headers, Body, Callback, UserData) ->
-    Callback:options(Request, Headers, Body, UserData);
-dispatch(_Other, Request, Headers, Body, Callback, UserData) ->
-    Callback:other_method(Request, Headers, Body, UserData).
+dispatch('GET', Request, Headers, _Body, Callback, OtherData) ->
+    Callback:get(Request, Headers, OtherData);
+dispatch('POST', Request, Headers, Body, Callback, OtherData) ->
+    Callback:post(Request, Headers, Body, OtherData);
+dispatch('DELETE', Request, Headers, _Body, Callback, OtherData) ->
+    Callback:delete(Request, Headers, OtherData);
+dispatch('HEAD', Request, Headers, _Body, Callback, OtherData) ->
+    Callback:head(Request, Headers, OtherData);
+dispatch('PUT', Request, Headers, Body, Callback, OtherData) ->
+    Callback:put(Request, Headers, Body, OtherData);
+dispatch('TRACE', Request, Headers, Body, Callback, OtherData) ->
+    Callback:trace(Request, Headers, Body, OtherData);
+dispatch('OPTIONS', Request, Headers, Body, Callback, OtherData) ->
+    Callback:options(Request, Headers, Body, OtherData);
+dispatch(_Other, Request, Headers, Body, Callback, OtherData) ->
+    Callback:other_method(Request, Headers, Body, OtherData).

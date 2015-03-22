@@ -5,7 +5,7 @@
     http_reply/1,
     http_reply/2,
     http_reply/3,
-
+    add_header/3,
     get_content_type/1
 ]).
 
@@ -23,6 +23,10 @@ http_reply(Code) ->
     http_reply(Code, <<>>).
 http_reply(Code, Body) ->
     http_reply(Code, [{"Content-Type", get_content_type(default)}], Body).
+
+%% to add new header
+add_header(Name, Value, Headers) ->
+    [{Name, Value} | Headers].
 
 %% content type
 get_content_type("html") -> 'text/html';
@@ -55,6 +59,7 @@ header([{Header, Text} | Rest], RetHeader) ->
 %% response code mapping
 response(100) -> "100 Continue";
 response(200) -> "200 OK";
+response(304) -> "304 Not Modified";
 response(404) -> "404 Not Found";
 response(501) -> "501 Not Implemented";
 response(Code) -> integer_to_list(Code).
